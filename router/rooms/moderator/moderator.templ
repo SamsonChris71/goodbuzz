@@ -61,6 +61,11 @@ templ index(room *room.Room, tournament *db.Tournament) {
 
 <section class="players">
   <h2>Player Controls</h2>
+  if room.IsLocked() {
+    <button hx-delete={fmt.Sprintf("/rooms/%d/lock", room.Id)}>Unlock Room</button>
+  } else {
+    <button hx-put={fmt.Sprintf("/rooms/%d/lock", room.Id)}>Lock Room</button>
+  }
   <div sse-swap="controls" hx-swap="innerHTML" class="player-tables"></div>
 </section>
 

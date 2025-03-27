@@ -80,6 +80,15 @@ func Live(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if !room.CanAttachPlayer(userToken) {
+		w.Header().Add("Content-Type", "text/event-stream")
+		w.Header().Add("Cache-Control", "no-cache")
+		w.Header().Add("Connection", "keep-alive")
+		fmt.Fprint(w, events.RoomLockedEvent(userToken))
+		return
+	}
+
+
 	player := db.GetPlayer(r.Context(), userToken)
 
 	var name string

@@ -22,6 +22,7 @@ type Room struct {
 	buzzer      *buzzer.Buzzer
 	players     *users.UserMap[*users.Player]
 	moderators  *users.UserMap[struct{}]
+	roomLock    []string
 }
 
 type roomUpdate struct {
@@ -40,6 +41,7 @@ func (roomMap *RoomMap) newRoom(roomId int64, name string, description string) *
 		locksCache:  NewLocksCache(),
 		players:     users.NewUserMap[*users.Player](),
 		moderators:  users.NewUserMap[struct{}](),
+		roomLock: nil,
 	}
 	room.buzzer = buzzer.NewBuzzer(room.sendBuzzerUpdates)
 	return &room
@@ -246,7 +248,16 @@ func (room *Room) IsPlayerAlreadyConnected(userToken string) bool {
 	return room.players.HasUser(userToken)
 }
 
+func (room *Room) CanAttachPlayer(userToken string) bool {
+	if len(room.roomLock) > 0 {
+		print(room.roomLock[0])
+	}
+	// Allow the player to join if the room is not locked or they were in before the lock
+	return !room.IsLocked() || slices.Contains(room.roomLock, userToken)
+}
+
 func (room *Room) AttachPlayer(w http.ResponseWriter, r *http.Request, userToken string, name string, team int64) {
+	// Check if we know that player, and they are locked
 	isLocked := room.locksCache.IsLocked(userToken)
 	player := users.NewPlayer(name, team, userToken, isLocked)
 	closeChan := room.players.AddUser(w, r, userToken, player)
@@ -309,4 +320,21 @@ func (room *Room) sendPlayerListUpdates() {
 	})
 
 	room.moderators.SendToAll(events.ModeratorPlayerControlsEvent(room.Id, players))
+}
+
+func (room *Room) IsLocked() bool {
+	return room.roomLock != nil
+}
+
+func (room *Room) Lock() {
+	players := room.players.GetAll()
+	roomLock := make([]string, len(players))
+	for i, player := range players {
+		roomLock[i] = player.Token
+	}
+	room.roomLock = roomLock
+}
+
+func (room *Room) Unlock() {
+	room.roomLock = nil
 }

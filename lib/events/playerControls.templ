@@ -122,3 +122,13 @@ templ OtherTabOpen(userToken string) {
   This browser already has a player open to this room in another window or tab.
   </p>
 }
+
+func RoomLockedEvent(userToken string) string {
+	return lib.FormatEventComponent("main", RoomLocked(userToken))
+}
+
+templ RoomLocked(userToken string) {
+  <p>
+  This room is currently locked. Please try again later, or reach out to the tournament directors if you think this is a mistake.
+  </p>
+}

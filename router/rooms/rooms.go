@@ -118,3 +118,21 @@ func GetRoomsForTournament(ctx context.Context, tournamentId int64) []room.Room 
 
 	return rooms
 }
+
+func Lock(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	room := ctx.Value("room").(*room.Room)
+	room.Lock()
+
+	response := fmt.Sprintf("<button hx-delete=\"/rooms/%d/lock\">Unlock Room</button>", room.Id)
+	fmt.Fprintf(w, response)
+}
+
+func Unlock(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+	room := ctx.Value("room").(*room.Room)
+	room.Unlock()
+
+	response := fmt.Sprintf("<button hx-put=\"/rooms/%d/lock\">Lock Room</button>", room.Id)
+	fmt.Fprintf(w, response)
+}
