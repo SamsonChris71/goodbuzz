@@ -12,7 +12,7 @@ import (
 
 var openRooms = room.NewRoomMap()
 
-func Middleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
+func contextMiddleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		roomId, paramErr := lib.GetIntParam(r, "id")
 		if paramErr != nil {
@@ -26,18 +26,41 @@ func Middleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
 			return
 		}
 
-		tournament := db.GetTournamentForRoom(r.Context(), roomId)
 		isMod := lib.IsMod(r)
 		isAdmin := lib.IsAdmin(r)
-		isUserAuthed := lib.IsUserAuthed(r, tournament.Id())
 
-		if !(isUserAuthed || isMod || isAdmin) {
+		ctx := context.WithValue(r.Context(), "room", room)
+		ctx = context.WithValue(ctx, "isMod", isMod)
+		ctx = context.WithValue(ctx, "isAdmin", isAdmin)
+
+		r = r.WithContext(ctx)
+		next(w, r)
+	})
+}
+
+func MiddlewareAny(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(next)
+}
+
+func MiddlewareMod(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		isAdmin := r.Context().Value("isAdmin").(bool)
+		isMod := r.Context().Value("isMod").(bool)
+		if !isAdmin && !isMod {
 			lib.Forbidden(w, r)
 			return
 		}
+		next(w, r)
+	})
+}
 
-		ctx := context.WithValue(r.Context(), "room", room)
-		r = r.WithContext(ctx)
+func MiddlewareAdmin(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		isAdmin := r.Context().Value("isAdmin").(bool)
+		if !isAdmin {
+			lib.Forbidden(w, r)
+			return
+		}
 		next(w, r)
 	})
 }

@@ -139,6 +139,16 @@ func (room *Room) UnlockPlayer(userToken string) {
 func (room *Room) KickPlayer(userToken string) {
 	logger.Debug("Kicking player %s", userToken)
 	room.players.KickUser(userToken)
+
+	if room.roomLock != nil {
+		newRoomLock := make([]string, 0)
+		for _, token := range room.roomLock {
+			if token != userToken {
+				newRoomLock = append(newRoomLock, token)
+			}
+		}
+		room.roomLock = newRoomLock
+	}
 }
 
 func (room *Room) KickAll() {

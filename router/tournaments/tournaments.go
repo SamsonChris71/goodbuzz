@@ -8,7 +8,7 @@ import (
 	"net/http"
 )
 
-func Middleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
+func contextMiddleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		tournament_id, parse_err := lib.GetIntParam(r, "id")
 		if parse_err != nil {
@@ -27,17 +27,39 @@ func Middleware(next func(http.ResponseWriter, *http.Request)) http.Handler {
 		isAdmin := lib.IsAdmin(r)
 		isUserAuthed := lib.IsUserAuthed(r, tournament_id)
 
-		if !(isUserAuthed || isMod || isAdmin) {
-			lib.Forbidden(w, r)
-			return
-		}
-
 		ctx := context.WithValue(r.Context(), "tournament", tournament)
 		ctx = context.WithValue(ctx, "isMod", isMod)
 		ctx = context.WithValue(ctx, "isAdmin", isAdmin)
 		ctx = context.WithValue(ctx, "isUserAuthed", isUserAuthed)
 
 		r = r.WithContext(ctx)
+		next(w, r)
+	})
+}
+
+func MiddlewareAny(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(next)
+}
+
+func MiddlewareMod(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		isAdmin := r.Context().Value("isAdmin").(bool)
+		isMod := r.Context().Value("isMod").(bool)
+		if !isAdmin && !isMod {
+			lib.Forbidden(w, r)
+			return
+		}
+		next(w, r)
+	})
+}
+
+func MiddlewareAdmin(next func(http.ResponseWriter, *http.Request)) http.Handler {
+	return contextMiddleware(func(w http.ResponseWriter, r *http.Request) {
+		isAdmin := r.Context().Value("isAdmin").(bool)
+		if !isAdmin {
+			lib.Forbidden(w, r)
+			return
+		}
 		next(w, r)
 	})
 }
