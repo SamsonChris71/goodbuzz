@@ -39,6 +39,7 @@ func Delete(w http.ResponseWriter, r *http.Request) {
 
 	if noToken != nil {
 		lib.BadRequest(w, r)
+		return
 	}
 
 	userToken := cookie.Value
