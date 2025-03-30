@@ -102,11 +102,11 @@ templ mod(tournament *db.Tournament, rooms []room.Room) {
 }
 
 templ player(tournament *db.Tournament, rooms []room.Room) {
+
 <div class="notice logout">
   <div>You are currently competing in <strong>{ tournament.Name() }</strong></div>
   <button hx-delete="/login" class="action edit">Switch Tournaments</button>
 </div>
-
 
 <h1>Tournament Rooms</h1>
 <table class="rooms player">

@@ -10,18 +10,12 @@ func Get(w http.ResponseWriter, r *http.Request) {
     isMod := lib.IsMod(r)
     isAdmin := lib.IsAdmin(r)
 
-    var content templ.Component
-    if isAdmin || isMod {
-      content = loggedInIndex(tournaments, isMod, isAdmin)
-    } else {
-      content = notLoggedInIndex(tournaments)
-    }
-
+    content := loggedInIndex(tournaments, isMod, isAdmin)
     lib.Render(w, r, "Goodbuzz", content)
 }
 
+// Currently unused
 templ notLoggedInIndex(tournaments []db.Tournament) {
-
 <main class="index">
   <h2>Player Login</h2>
   <p class="instructions">
@@ -42,13 +36,10 @@ templ notLoggedInIndex(tournaments []db.Tournament) {
     <button>Login</button>
   </form>
 
-  <p style="margin-top: 40px">
-    Moderators and admins, <a href="/login">login here</a>.
-  </p>
 </main>
 }
 
-// This is only for mods or admins
+// This was originally just for logged in users but I've disabled the "user" login right now
 templ loggedInIndex(tournaments []db.Tournament, isMod bool, isAdmin bool) {
 
 <main class="index">
@@ -74,9 +65,16 @@ templ loggedInIndex(tournaments []db.Tournament, isMod bool, isAdmin bool) {
   </form>
   }
 
+  <p style="margin-top: 40px">
+  </p>
 
-  <h2>Logout</h2>
-  <p><button hx-delete="/login" class="action delete">Logout</button></p>
+  if isAdmin || isMod {
+    <h2>Logout</h2>
+    <p><button hx-delete="/login" class="action delete">Logout</button></p>
+  } else {
+    <h2>Moderator Login</h2>
+    Moderators and admins, <a href="/login">login here</a>.
+  }
 
 </main>
 }
